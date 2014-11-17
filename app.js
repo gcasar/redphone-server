@@ -171,7 +171,8 @@ udp_matchmaker.on('message', function(data, rinfo) {
     	console.log('# Client registered: %s@[%s:%s | %s:%s]', data.address,
                 rinfo.address, rinfo.port, data.localIp, data.localPort);
 
-    	sendHelloMessage(gcmTokens[data.target], data.address);
+    	if(gcmTokens[data.target]!=undefined)
+    		sendHelloMessage(gcmTokens[data.target], data.address);
 
 	} else if (data.type == 'connect') {
     	var couple = [ clients[data.from], clients[data.to] ] 
