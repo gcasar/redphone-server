@@ -78,7 +78,8 @@ function sendHelloMessage(gcmToken){
 
 	var registrationIds = [gcmToken];
 	sender.send(message, registrationIds, 4, function (err, result) {
-	    console.log("GCM".debug+(""+result).data);
+		if(err)console.log("GCM".debug+ " ERR ".error+ (""+result).data);
+	    else console.log("GCM".debug+(""+result).data);
 	});
 
 }
