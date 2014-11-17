@@ -70,10 +70,11 @@ db.once('open', function callback(){
 });
 
 //GCM notif init
-function sendHelloMessage(gcmToken){
+function sendHelloMessage(gcmToken, address){
 	var message = new gcm.Message({
 	    data: {
-	        'address': '041285268'
+	        'address': address
+	    
 	    }
 	});
 
@@ -100,6 +101,8 @@ var server = http.createServer(function(request,response){
 });
 
 server.listen(GCM_PORT);
+
+var gcmTokens = [];
 
 function parseRequest(payload, response){
 	
@@ -131,6 +134,7 @@ function handleRegister(msg,res){
 			}else{
 				console.log("OK ".info+(""+msg.address).verbose+" updated");
 				sendHelloMessage(msg.gcmToken);
+				gcmTokens[msg.address] = gcmToken;
 			}
 		});
 }
@@ -166,6 +170,8 @@ udp_matchmaker.on('message', function(data, rinfo) {
     
     	console.log('# Client registered: %s@[%s:%s | %s:%s]', data.address,
                 rinfo.address, rinfo.port, data.localIp, data.localPort);
+
+    	sendHelloMessage(gcmTokens[data.target], data.address);
 
 	} else if (data.type == 'connect') {
     	var couple = [ clients[data.from], clients[data.to] ] 
