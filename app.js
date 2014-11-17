@@ -9,6 +9,8 @@ var mongoose = require('mongoose');
 var colors = require('colors');
 var gcm = require('node-gcm');
 
+var sender = new gcm.Sender('AIzaSyCfxNWMbRrSCd_56fNJcjDcooAFP75W1oM');
+
 //MISIC
 
 colors.setTheme({
@@ -65,6 +67,21 @@ db.on('error', console.error.bind(console, 'Open DB: '+ 'ERR'.error));
 db.once('open', function callback(){
 	console.log('Open DB: '+ 'OK'.info);
 });
+
+//GCM notif init
+function sendHelloMessage(gcmToken){
+	var message = new gcm.Message({
+	    data: {
+	        'address': '041285268'
+	    }
+	});
+
+	var registrationIds = [gcmToken];
+	sender.send(message, registrationIds, 4, function (err, result) {
+	    console.log("GCM".debug+(""+result).data);
+	});
+
+}
 
 
 //GCM registrations via HTTP
