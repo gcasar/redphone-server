@@ -114,8 +114,8 @@ function parseRequest(payload, response){
 	}catch(err){
 
 		console.log("WEB ".debug+(""+err).data);
-		response.writeHead(400);
-		response.end("400\n");
+		response.writeHead(400,{"Content-Type": "application/json"});
+		response.end("{'err':'400'}\n");
 	}
 }
 
