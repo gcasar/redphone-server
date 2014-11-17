@@ -8,6 +8,7 @@ var http = require('http');
 var mongoose = require('mongoose');
 var colors = require('colors');
 var gcm = require('node-gcm');
+var dgram = require('dgram');
 
 var sender = new gcm.Sender('AIzaSyCfxNWMbRrSCd_56fNJcjDcooAFP75W1oM');
 
@@ -46,14 +47,14 @@ var clientConnectionSchema = mongoose.Schema({
 	publicPort: Number,
 	localIP: String,
 	localPort: Number,
-	client: {type: mongoose.Schema.ObjectId, ref: 'client'},
+	client: {type: mongoose.Schema.ObjectId, ref: 'Client'},
 	created: {type: Date, default: Date.now},
 });
 
 var p2pConnectionSchema = mongoose.Schema({
 	created: {type: Date, default: Date.now},
-	initiator: {type: mongoose.Schema.ObjectId, ref: 'clientConnection'},
-	target: {type: mongoose.Schema.ObjectId, ref: 'clientConnection'},
+	initiator: {type: mongoose.Schema.ObjectId, ref: 'ClientConnection'},
+	target: {type: mongoose.Schema.ObjectId, ref: 'ClientConnection'},
 });
 
 var Client = mongoose.model('Client', clientSchema);
@@ -134,5 +135,64 @@ function handleRegister(msg,res){
 		});
 }
 
-//UDP punching
+//https://github.com/jankolkmeier/node-upd-hole-punching/blob/master/rendezvous.js
 
+//UDP punching
+var udp_matchmaker = dgram.createSocket('udp4');
+var udp_port = UDP_PORT;
+
+
+var clients = {};
+
+udp_matchmaker.on('listening', function() {
+	var address = udp_matchmaker.address();
+	console.log('UDP '.debug, address.address, address.port);
+});
+
+udp_matchmaker.on('message', function(data, rinfo) {
+	try {
+		data = JSON.parse(data);
+	} catch (e) {
+		return console.log('UDP '.debug + 'ERR '.error + 'Couldn\'t parse data (%s):\n%s', e, data);
+	}
+	if (data.msg == 'ADDR') {
+		clients[data.own_address] = {
+			target: data.target,
+			public: rinfo,
+			localIp: data.localIp,
+			localPort: data.localPort,
+			address: data.address,
+		}
+    
+    	console.log('# Client registered: %s@[%s:%s | %s:%s]', data.address,
+                rinfo.address, rinfo.port, data.localIp, data.localPort);
+
+	} else if (data.type == 'connect') {
+    	var couple = [ clients[data.from], clients[data.to] ] 
+    	for (var i=0; i<couple.length; i++) {
+      		if (!couple[i]) return console.log('Client unknown!');
+    	}
+    
+    	for (var i=0; i<couple.length; i++) {
+    		send(couple[i].connections.public.address, couple[i].connections.public.port, {
+        		type: 'connection',
+        		client: couple[(i+1)%couple.length],
+      		}); 
+    	}
+  	}
+});
+
+var send = function(host, port, msg, cb) {
+  var data = new Buffer(JSON.stringify(msg));
+  udp_matchmaker.send(data, 0, data.length, port, host, function(err, bytes) {
+    if (err) {
+      udp_matchmaker.close();
+      console.log('# stopped due to error: %s', err);
+    } else {
+      console.log('# sent '+msg.type);
+      if (cb) cb();
+    }
+  });
+}
+
+udp_matchmaker.bind(udp_port);
