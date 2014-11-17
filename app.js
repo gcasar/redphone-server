@@ -128,6 +128,7 @@ function handleRegister(msg,res){
 				console.log("ERR ".error+err);
 			}else{
 				console.log("OK ".info+(""+msg.address).verbose+" updated");
+				sendHelloMessage(msg.gcmToken);
 			}
 		});
 }
