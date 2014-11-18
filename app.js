@@ -147,6 +147,7 @@ var udp_port = UDP_PORT;
 
 
 var clients = {};
+var targets = {};
 
 udp_matchmaker.on('listening', function() {
 	var address = udp_matchmaker.address();
@@ -160,19 +161,47 @@ udp_matchmaker.on('message', function(data, rinfo) {
 		return console.log('UDP '.debug + 'ERR '.error + 'Couldn\'t parse data (%s):\n%s', e, data);
 	}
 	if (data.msg == 'ADDR') {
-		clients[data.own_address] = {
+		//override with latest
+		clients[data.address] = {
 			target: data.target,
 			public: rinfo,
 			localIp: data.localIp,
 			localPort: data.localPort,
 			address: data.address,
 		}
-    
+		//add new
+		//"*" as a target string indicates any
+		targets[data.address+data.target]=clients[data.address];
+
+
     	console.log('# Client registered: %s@[%s:%s | %s:%s]', data.address,
                 rinfo.address, rinfo.port, data.localIp, data.localPort);
 
-    	if(gcmTokens[data.target]!=undefined)
-    		sendHelloMessage(gcmTokens[data.target], data.address);
+
+		if(targets[data.target+data.address]!=undefined){
+			//we have a connection waiting for us
+			//remove from general connections
+
+			pair(targets[data.address+data.target],targets[data.target+data.address]);
+
+
+			targets[data.address+data.target] = undefined;
+			targets[data.target+data.address] = undefined;
+
+		}else if(targets[data.target+"*"]!=undefined){
+			// try to connect to a general connection
+
+			pair(targets[data.address+data.target], targets[data.target+"*"]);
+
+
+			targets[data.target+"*"] = undefined;
+			targets[data.address+data.target] = undefined;
+		}else{
+			//try to wake the other machine
+    		if(gcmTokens[data.target]!=undefined)
+    			sendHelloMessage(gcmTokens[data.target], data.address);
+		}
+    
 
 	} else if (data.type == 'connect') {
     	var couple = [ clients[data.from], clients[data.to] ] 
@@ -189,17 +218,29 @@ udp_matchmaker.on('message', function(data, rinfo) {
   	}
 });
 
-var send = function(host, port, msg, cb) {
-  var data = new Buffer(JSON.stringify(msg));
-  udp_matchmaker.send(data, 0, data.length, port, host, function(err, bytes) {
-    if (err) {
-      udp_matchmaker.close();
-      console.log('# stopped due to error: %s', err);
-    } else {
-      console.log('# sent '+msg.type);
-      if (cb) cb();
-    }
-  });
+function pair( a, b ){
+	var msg = b;
+	var data = new Buffer(JSON.stringify(msg));
+
+	udp_matchmaker.send(data, 0, data.length, a.public.port, a.public.address, function(err, bytes){
+		if (err) {
+	      console.log('# error pairing: %s', err);
+	    } else {
+	      console.log('# sent '+msg.type);
+	    }
+	});
+
+
+	msg = a;
+	data = new Buffer(JSON.stringify(msg));
+
+	udp_matchmaker.send(data, 0, data.length,b.public.port, b.public.address, function(err, bytes){
+		if (err) {
+	      console.log('# error pairing: %s', err);
+	    } else {
+	      console.log('# sent '+msg.type);
+	    }
+	});
 }
 
 udp_matchmaker.bind(udp_port);
