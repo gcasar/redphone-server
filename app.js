@@ -185,7 +185,7 @@ udp_matchmaker.on('message', function(data, rinfo) {
 		if(targets[data.target+data.address]!=undefined){
 			//we have a connection waiting for us
 			//remove from general connections
-			console.log("# found target:" data.target);
+			console.log("# found target:"+ data.target);
 			pair(targets[data.address+data.target],targets[data.target+data.address]);
 
 
@@ -195,7 +195,7 @@ udp_matchmaker.on('message', function(data, rinfo) {
 		}else if(targets[data.target+"*"]!=undefined){
 			// try to connect to a general connection
 
-			console.log("# found target:" data.target);
+			console.log("# found target:"+ data.target);
 
 			pair(targets[data.address+data.target], targets[data.target+"*"]);
 
