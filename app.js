@@ -175,14 +175,17 @@ udp_matchmaker.on('message', function(data, rinfo) {
 		targets[data.address+data.target]=clients[data.address];
 
 
+
+
     	console.log('# Client registered: %s@[%s:%s | %s:%s]', data.address,
                 rinfo.address, rinfo.port, data.localIp, data.localPort);
 
+    	console.log(JSON.stringify(targets).data);
 
 		if(targets[data.target+data.address]!=undefined){
 			//we have a connection waiting for us
 			//remove from general connections
-
+			console.log("# found target": data.target);
 			pair(targets[data.address+data.target],targets[data.target+data.address]);
 
 
@@ -191,6 +194,8 @@ udp_matchmaker.on('message', function(data, rinfo) {
 
 		}else if(targets[data.target+"*"]!=undefined){
 			// try to connect to a general connection
+
+			console.log("# found target": data.target);
 
 			pair(targets[data.address+data.target], targets[data.target+"*"]);
 
@@ -223,6 +228,8 @@ function pair( a, b ){
 	var msg = b;
 	var data = new Buffer(JSON.stringify(msg));
 
+	console.log( "## sending: "+data);
+
 	udp_matchmaker.send(data, 0, data.length, a.publicPort, a.publicIp, function(err, bytes){
 		if (err) {
 	      console.log('# error pairing: %s', err);
@@ -234,6 +241,9 @@ function pair( a, b ){
 
 	msg = a;
 	data = new Buffer(JSON.stringify(msg));
+
+	
+	console.log( "## sending: "+data);
 
 	udp_matchmaker.send(data, 0, data.length,b.publicPort, b.publicIp, function(err, bytes){
 		if (err) {
