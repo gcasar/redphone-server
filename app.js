@@ -164,7 +164,8 @@ udp_matchmaker.on('message', function(data, rinfo) {
 		//override with latest
 		clients[data.address] = {
 			target: data.target,
-			public: rinfo,
+			publicIp: rinfo.address,
+			publicPort: rinfo.port,
 			localIp: data.localIp,
 			localPort: data.localPort,
 			address: data.address,
@@ -222,7 +223,7 @@ function pair( a, b ){
 	var msg = b;
 	var data = new Buffer(JSON.stringify(msg));
 
-	udp_matchmaker.send(data, 0, data.length, a.public.port, a.public.address, function(err, bytes){
+	udp_matchmaker.send(data, 0, data.length, a.publicPort, a.publicIp, function(err, bytes){
 		if (err) {
 	      console.log('# error pairing: %s', err);
 	    } else {
@@ -234,7 +235,7 @@ function pair( a, b ){
 	msg = a;
 	data = new Buffer(JSON.stringify(msg));
 
-	udp_matchmaker.send(data, 0, data.length,b.public.port, b.public.address, function(err, bytes){
+	udp_matchmaker.send(data, 0, data.length,b.publicPort, b.publicIp, function(err, bytes){
 		if (err) {
 	      console.log('# error pairing: %s', err);
 	    } else {
