@@ -225,10 +225,16 @@ udp_matchmaker.on('message', function(data, rinfo) {
 });
 
 function pair( a, b ){
-	var msg = b;
-	var data = new Buffer(JSON.stringify(msg));
+	//check if they are the same - local nat
+	if(a.publicIp==b.publicIp){
+		a.publicIp=a.localIp;
+		b.publicIp=b.localIp;
+	}
 
-	console.log( "## sending: "+data);
+	var msg = JSON.stringify(a);
+	var data = new Buffer(msg);
+
+	console.log( "## sending: "+msg);
 
 	udp_matchmaker.send(data, 0, data.length, a.publicPort, a.publicIp, function(err, bytes){
 		if (err) {
@@ -239,11 +245,11 @@ function pair( a, b ){
 	});
 
 
-	msg = a;
-	data = new Buffer(JSON.stringify(msg));
+	msg = JSON.stringify(a);
+	data = new Buffer(msg);
 
 
-	console.log( "## sending: "+data);
+	console.log( "## sending: "+msg);
 
 	udp_matchmaker.send(data, 0, data.length,b.publicPort, b.publicIp, function(err, bytes){
 		if (err) {
